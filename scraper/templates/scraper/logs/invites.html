@@ -1,0 +1,126 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Invite Logs - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Invite Logs</h1>
+    <a href="{% url 'invite_dm_interface' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Start New Campaign
+    </a>
+</div>
+
+{% if logs %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Member</th>
+                    <th>Target Group</th>
+                    <th>Account</th>
+                    <th>Status</th>
+                    <th>Error Message</th>
+                    <th>Attempted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr class="{% if log.status != 'success' %}table-warning{% endif %}">
+                    <td>
+                        {% if log.member %}
+                            <strong>{{ log.member }}</strong>
+                            <br><small class="text-muted">ID: {{ log.member.telegram_id }}</small>
+                        {% else %}
+                            <span class="text-muted">Unknown member</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ log.target_group.name }}</strong>
+                        <br><small class="text-muted">{{ log.target_group.identifier }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ log.account.phone }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if log.status == 'success' %}success{% elif log.status == 'already_member' %}info{% elif log.status == 'privacy_restricted' %}warning{% else %}danger{% endif %}">
+                            {{ log.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if log.error_message %}
+                            <small class="text-danger">{{ log.error_message|truncatechars:50 }}</small>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ log.attempted_at|date:"M d, Y H:i" }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Invite Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">{{ logs|length }}</h4>
+                                <small>Total Attempts</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">
+                                    {{ logs|dictsort:"status"|slice:":1"|length }}
+                                </h4>
+                                <small>Successful</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-warning">
+                                    {% with failed=logs|length %}
+                                        {% with success=logs|dictsort:"status"|slice:":1"|length %}
+                                            {{ failed|add:success|add:"-"|add:success }}
+                                        {% endwith %}
+                                    {% endwith %}
+                                </h4>
+                                <small>Failed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-info">
+                                    {% if logs %}
+                                        {% with success=logs|dictsort:"status"|slice:":1"|length %}
+                                            {% widthratio success logs|length 100 %}%
+                                        {% endwith %}
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </h4>
+                                <small>Success Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <h4>No invite logs</h4>
+        <p>Start an invite campaign to see logs here.</p>
+        <a href="{% url 'invite_dm_interface' %}" class="btn btn-primary">Start Invite Campaign</a>
+    </div>
+{% endif %}
+{% endblock %}

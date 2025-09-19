@@ -1,0 +1,109 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Groups - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Telegram Groups</h1>
+    <a href="{% url 'group_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Group
+    </a>
+</div>
+
+<!-- Filter by Account -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="get" class="d-flex">
+            <select name="account" class="form-select me-2" onchange="this.form.submit()">
+                <option value="">All Accounts</option>
+                {% for account in accounts %}
+                    <option value="{{ account.pk }}" {% if selected_account == account.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ account.phone }} {% if account.name %}({{ account.name }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-outline-primary">Filter</button>
+        </form>
+    </div>
+</div>
+
+{% if groups %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Group Name</th>
+                    <th>Account</th>
+                    <th>Identifier</th>
+                    <th>Type</th>
+                    <th>Members</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in groups %}
+                <tr>
+                    <td>
+                        <strong>{{ group.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ group.account.phone }}</span>
+                        {% if group.account.name %}
+                            <br><small class="text-muted">{{ group.account.name }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <code>{{ group.identifier }}</code>
+                    </td>
+                    <td>
+                        {% if group.group_type %}
+                            <span class="badge bg-secondary">{{ group.get_group_type_display }}</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if group.member_count %}
+                            {{ group.member_count|floatformat:0 }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if group.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'group_edit' group.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'start_scraping' %}?group={{ group.pk }}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-search"></i>
+                            </a>
+                            <a href="{% url 'group_delete' group.pk %}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <h4>No groups configured</h4>
+        <p>You need to add groups to your accounts to start scraping.</p>
+        {% if accounts %}
+            <a href="{% url 'group_create' %}" class="btn btn-primary">Add Your First Group</a>
+        {% else %}
+            <p>First, you need to <a href="{% url 'account_create' %}">add an account</a>.</p>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

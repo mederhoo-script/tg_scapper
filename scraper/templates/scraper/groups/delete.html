@@ -1,0 +1,56 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Delete Group - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Delete Group</h1>
+    <a href="{% url 'group_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Groups
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Are you sure you want to delete the following group?</p>
+                
+                <div class="alert alert-info">
+                    <h6>Group Details:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Name:</strong> {{ group.name }}</li>
+                        <li><strong>Identifier:</strong> {{ group.identifier }}</li>
+                        <li><strong>Account:</strong> {{ group.account.phone }}</li>
+                        <li><strong>Type:</strong> {{ group.get_group_type_display|default:"Unknown" }}</li>
+                        <li><strong>Member Count:</strong> {{ group.member_count|default:"Unknown" }}</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Warning:</h6>
+                    <p class="mb-0">This action cannot be undone. Deleting this group will also:</p>
+                    <ul class="mb-0">
+                        <li>Remove all scraping sessions for this group</li>
+                        <li>Delete all scraped member data from this group</li>
+                        <li>Remove all invite logs for this group</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'group_list' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Group
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

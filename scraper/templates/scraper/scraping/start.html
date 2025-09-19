@@ -1,0 +1,117 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Start Scraping - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Start New Scraping Session</h1>
+    <a href="{% url 'scraping_sessions' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Sessions
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Scraping Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.account.id_for_label }}" class="form-label">Account</label>
+                        {{ form.account }}
+                        {% if form.account.help_text %}
+                            <div class="form-text">{{ form.account.help_text }}</div>
+                        {% endif %}
+                        {% if form.account.errors %}
+                            <div class="text-danger">
+                                {% for error in form.account.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.group.id_for_label }}" class="form-label">Group</label>
+                        {{ form.group }}
+                        {% if form.group.help_text %}
+                            <div class="form-text">{{ form.group.help_text }}</div>
+                        {% endif %}
+                        {% if form.group.errors %}
+                            <div class="text-danger">
+                                {% for error in form.group.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        {{ form.use_message_scraping }}
+                        <label class="form-check-label" for="{{ form.use_message_scraping.id_for_label }}">
+                            Use message history scraping
+                        </label>
+                        <div class="form-text">Enable this if direct member list access is restricted</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.message_limit.id_for_label }}" class="form-label">Message History Limit</label>
+                        {{ form.message_limit }}
+                        <div class="form-text">Number of messages to analyze (only used if message scraping is enabled)</div>
+                        {% if form.message_limit.errors %}
+                            <div class="text-danger">
+                                {% for error in form.message_limit.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'scraping_sessions' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Start Scraping
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6>Scraping Information</h6>
+            </div>
+            <div class="card-body">
+                <h6>What is scraping?</h6>
+                <p class="small">Scraping extracts member information from Telegram groups and channels. This includes usernames, names, and other publicly available data.</p>
+                
+                <h6>Scraping Methods:</h6>
+                <ul class="small">
+                    <li><strong>Direct:</strong> Gets member list directly (fastest)</li>
+                    <li><strong>Message History:</strong> Analyzes message history to find members (slower but works when direct access is restricted)</li>
+                </ul>
+                
+                <div class="alert alert-warning">
+                    <small>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Important:</strong> Large groups may have restricted member visibility. The account must be a member of the group.
+                    </small>
+                </div>
+                
+                <div class="alert alert-info">
+                    <small>
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Scraping may take several minutes for large groups. You can monitor progress on the sessions page.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
