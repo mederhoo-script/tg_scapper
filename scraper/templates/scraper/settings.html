@@ -1,0 +1,139 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Settings - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Application Settings</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Default Campaign Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Default Interval (seconds)</label>
+                                <input type="number" name="default_interval" class="form-control" 
+                                       value="{{ settings.default_interval|default:30 }}" min="10" max="300">
+                                <div class="form-text">Default delay between actions</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Max Invites</label>
+                                <input type="number" name="max_invites" class="form-control" 
+                                       value="{{ settings.max_invites|default:50 }}" min="1" max="1000">
+                                <div class="form-text">Maximum invites per campaign</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Max Messages</label>
+                                <input type="number" name="max_messages" class="form-control" 
+                                       value="{{ settings.max_messages|default:100 }}" min="1" max="1000">
+                                <div class="form-text">Maximum DMs per campaign</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Default Message Scraping Limit</label>
+                                <input type="number" name="message_scraping_limit" class="form-control" 
+                                       value="{{ settings.message_scraping_limit|default:500 }}" min="100" max="5000">
+                                <div class="form-text">Messages to analyze when scraping</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Auto-cleanup logs after (days)</label>
+                                <input type="number" name="log_retention_days" class="form-control" 
+                                       value="{{ settings.log_retention_days|default:30 }}" min="1" max="365">
+                                <div class="form-text">Automatically delete old logs</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6>Application Information</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><strong>Total Accounts:</strong> {{ stats.accounts_count }}</li>
+                    <li><strong>Total Groups:</strong> {{ stats.groups_count }}</li>
+                    <li><strong>Scraping Sessions:</strong> {{ stats.sessions_count }}</li>
+                    <li><strong>Scraped Members:</strong> {{ stats.members_count }}</li>
+                    <li><strong>Invite Logs:</strong> {{ stats.invite_logs_count }}</li>
+                    <li><strong>DM Logs:</strong> {{ stats.dm_logs_count }}</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>System Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-warning" onclick="cleanupOldLogs()">
+                        <i class="fas fa-broom"></i> Cleanup Old Logs
+                    </button>
+                    <a href="/admin/" class="btn btn-outline-info" target="_blank">
+                        <i class="fas fa-tools"></i> Admin Panel
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>Security Notes</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <small>
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Security:</strong> API credentials are stored securely. Session files are isolated per account.
+                    </small>
+                </div>
+                <div class="alert alert-info">
+                    <small>
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Rate Limits:</strong> Respect Telegram's rate limits to avoid account restrictions.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function cleanupOldLogs() {
+        if (confirm('Are you sure you want to cleanup old logs? This action cannot be undone.')) {
+            // Add cleanup functionality here
+            alert('Cleanup functionality would be implemented here');
+        }
+    }
+</script>
+{% endblock %}

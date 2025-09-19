@@ -1,0 +1,187 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Invite & DM Interface - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Invite & DM Interface</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Campaign Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- CSV Upload -->
+                    <div class="mb-4">
+                        <label class="form-label">Upload CSV File</label>
+                        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                        <div class="form-text">Upload a CSV file with member data (exported from scraping sessions)</div>
+                    </div>
+                    
+                    <!-- Account Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Account</label>
+                        <select name="account" class="form-select" required>
+                            <option value="">Select an account</option>
+                            {% for account in accounts %}
+                                <option value="{{ account.pk }}">{{ account.phone }} {% if account.name %}({{ account.name }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Action Type -->
+                    <div class="mb-3">
+                        <label class="form-label">Action</label>
+                        <select name="action" class="form-select" required onchange="toggleGroupSelection(this.value)">
+                            <option value="">Select action</option>
+                            <option value="invite">Invite to Group</option>
+                            <option value="dm">Send Direct Message</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Target Group (for invites) -->
+                    <div class="mb-3" id="group-selection" style="display: none;">
+                        <label class="form-label">Target Group</label>
+                        <select name="target_group" class="form-select">
+                            <option value="">Select a group</option>
+                            {% for group in target_groups %}
+                                <option value="{{ group.pk }}">{{ group.name }} ({{ group.account.phone }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Message Template -->
+                    <div class="mb-3">
+                        <label class="form-label">Message Template</label>
+                        <select name="message_template" class="form-select" required>
+                            <option value="">Select a template</option>
+                            {% for template in templates %}
+                                <option value="{{ template.pk }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Settings -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Interval (seconds)</label>
+                                <input type="number" name="interval" class="form-control" value="30" min="10" max="300" required>
+                                <div class="form-text">Delay between actions</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Max Invites</label>
+                                <input type="number" name="max_invites" class="form-control" value="50" min="1" max="1000">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Max Messages</label>
+                                <input type="number" name="max_messages" class="form-control" value="100" min="1" max="1000">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane"></i> Start Campaign
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6>Campaign Information</h6>
+            </div>
+            <div class="card-body">
+                <h6>How it works:</h6>
+                <ol class="small">
+                    <li>Upload a CSV file with member data</li>
+                    <li>Choose an account to send from</li>
+                    <li>Select action: invite to group or send DM</li>
+                    <li>Choose a message template</li>
+                    <li>Configure limits and timing</li>
+                    <li>Start the campaign</li>
+                </ol>
+                
+                <div class="alert alert-warning">
+                    <small>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Rate Limits:</strong> Telegram has strict rate limits. Use appropriate intervals to avoid restrictions.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>CSV Format</h6>
+            </div>
+            <div class="card-body">
+                <p class="small">Your CSV file should include these columns:</p>
+                <ul class="small">
+                    <li>ID (required)</li>
+                    <li>Username</li>
+                    <li>First Name</li>
+                    <li>Last Name</li>
+                    <li>Phone</li>
+                    <li>Access Hash</li>
+                </ul>
+                
+                <div class="alert alert-info">
+                    <small>
+                        <i class="fas fa-info-circle"></i>
+                        You can export CSV files from completed scraping sessions.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'template_create' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus"></i> Create Template
+                    </a>
+                    <a href="{% url 'invite_logs' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-list"></i> View Invite Logs
+                    </a>
+                    <a href="{% url 'dm_logs' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-list"></i> View DM Logs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleGroupSelection(action) {
+        const groupSelection = document.getElementById('group-selection');
+        if (action === 'invite') {
+            groupSelection.style.display = 'block';
+            groupSelection.querySelector('select').required = true;
+        } else {
+            groupSelection.style.display = 'none';
+            groupSelection.querySelector('select').required = false;
+        }
+    }
+</script>
+{% endblock %}

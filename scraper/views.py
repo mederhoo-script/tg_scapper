@@ -164,11 +164,35 @@ def start_scraping(request):
         form = ScrapingSessionForm(request.POST)
         if form.is_valid():
             session = form.save()
-            # Start scraping in background (simplified for now)
-            messages.success(request, f'Scraping session started for {session.group.name}!')
-            return redirect('scraping_sessions')
+            # Start scraping in background
+            try:
+                from .telegram_utils import run_scraping_session
+                import threading
+                
+                def scrape_in_background():
+                    run_scraping_session(session.id)
+                
+                thread = threading.Thread(target=scrape_in_background)
+                thread.daemon = True
+                thread.start()
+                
+                messages.success(request, f'Scraping session started for {session.group.name}!')
+                return redirect('scraping_sessions')
+            except Exception as e:
+                messages.error(request, f'Error starting scraping session: {str(e)}')
+                session.delete()
     else:
         form = ScrapingSessionForm()
+        # Pre-select group if provided in URL
+        group_id = request.GET.get('group')
+        if group_id:
+            try:
+                group = Group.objects.get(pk=group_id)
+                form.initial['group'] = group
+                form.initial['account'] = group.account
+            except Group.DoesNotExist:
+                pass
+    
     return render(request, 'scraper/scraping/start.html', {'form': form})
 
 
@@ -284,7 +308,77 @@ def invite_dm_interface(request):
     """Main invite/DM interface"""
     if request.method == 'POST':
         # Handle CSV upload and processing
-        pass
+        csv_file = request.FILES.get('csv_file')
+        if not csv_file:
+            messages.error(request, 'Please upload a CSV file')
+            return redirect('invite_dm_interface')
+        
+        # Read CSV content
+        try:
+            csv_content = csv_file.read().decode('utf-8')
+        except:
+            messages.error(request, 'Error reading CSV file')
+            return redirect('invite_dm_interface')
+        
+        # Get form data
+        account_id = request.POST.get('account')
+        action = request.POST.get('action')
+        target_group_id = request.POST.get('target_group')
+        template_id = request.POST.get('message_template')
+        interval = request.POST.get('interval', 30)
+        max_invites = request.POST.get('max_invites', 50)
+        max_messages = request.POST.get('max_messages', 100)
+        
+        # Validate required fields
+        if not all([account_id, action, template_id]):
+            messages.error(request, 'Please fill in all required fields')
+            return redirect('invite_dm_interface')
+        
+        if action == 'invite' and not target_group_id:
+            messages.error(request, 'Target group is required for invites')
+            return redirect('invite_dm_interface')
+        
+        # Prepare settings
+        settings_dict = {
+            'interval': interval,
+            'max_invites': max_invites,
+            'max_messages': max_messages,
+            'group_link': ''
+        }
+        
+        # Add group link if available
+        if target_group_id:
+            try:
+                group = Group.objects.get(pk=target_group_id)
+                settings_dict['group_link'] = group.identifier
+            except Group.DoesNotExist:
+                pass
+        
+        # Start campaign in background
+        try:
+            import threading
+            from .invite_utils import run_invite_campaign_async, run_dm_campaign_async
+            
+            def campaign_worker():
+                if action == 'invite':
+                    run_invite_campaign_async(
+                        account_id, csv_content, target_group_id, template_id, settings_dict
+                    )
+                else:  # dm
+                    run_dm_campaign_async(
+                        account_id, csv_content, template_id, settings_dict
+                    )
+            
+            thread = threading.Thread(target=campaign_worker)
+            thread.daemon = True
+            thread.start()
+            
+            action_name = 'invite campaign' if action == 'invite' else 'DM campaign'
+            messages.success(request, f'{action_name.title()} started successfully! Check the logs for progress.')
+            return redirect('invite_dm_interface')
+            
+        except Exception as e:
+            messages.error(request, f'Error starting campaign: {str(e)}')
     
     accounts = Account.objects.filter(is_active=True)
     target_groups = Group.objects.filter(is_active=True)
@@ -314,11 +408,35 @@ def settings_view(request):
     """Application settings"""
     if request.method == 'POST':
         # Handle settings updates
-        pass
+        settings_to_update = [
+            'default_interval', 'max_invites', 'max_messages',
+            'message_scraping_limit', 'log_retention_days'
+        ]
+        
+        for setting_key in settings_to_update:
+            value = request.POST.get(setting_key)
+            if value:
+                Settings.set_setting(setting_key, value)
+        
+        messages.success(request, 'Settings updated successfully!')
+        return redirect('settings')
     
     # Get current settings
     settings_dict = {}
     for setting in Settings.objects.all():
         settings_dict[setting.key] = setting.value
     
-    return render(request, 'scraper/settings.html', {'settings': settings_dict})
+    # Get application statistics
+    stats = {
+        'accounts_count': Account.objects.count(),
+        'groups_count': Group.objects.count(),
+        'sessions_count': ScrapingSession.objects.count(),
+        'members_count': ScrapedMember.objects.count(),
+        'invite_logs_count': InviteLog.objects.count(),
+        'dm_logs_count': DMLog.objects.count(),
+    }
+    
+    return render(request, 'scraper/settings.html', {
+        'settings': settings_dict,
+        'stats': stats
+    })

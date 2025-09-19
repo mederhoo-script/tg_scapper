@@ -1,0 +1,78 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Message Templates - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Message Templates</h1>
+    <a href="{% url 'template_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Template
+    </a>
+</div>
+
+{% if templates %}
+    <div class="row">
+        {% for template in templates %}
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ template.name }}</h6>
+                        <div class="btn-group">
+                            <a href="{% url 'template_edit' template.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if template.subject %}
+                            <p class="small text-muted mb-2"><strong>Subject:</strong> {{ template.subject }}</p>
+                        {% endif %}
+                        <div class="border p-3 bg-light small" style="max-height: 200px; overflow-y: auto;">
+                            {{ template.content|linebreaks }}
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Created: {{ template.created_at|date:"M d, Y" }} | 
+                                Updated: {{ template.updated_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <h4>No message templates</h4>
+        <p>Create message templates for invites and direct messages. Templates can use placeholders like {name} and {group_link}.</p>
+        <a href="{% url 'template_create' %}" class="btn btn-primary">Create Your First Template</a>
+    </div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h6>Template Variables</h6>
+            </div>
+            <div class="card-body">
+                <p class="small">You can use the following variables in your message templates:</p>
+                <ul class="small">
+                    <li><code>{name}</code> - The recipient's first name (or username if no first name)</li>
+                    <li><code>{group_link}</code> - The target group link or identifier</li>
+                    <li><code>{username}</code> - The recipient's username (if available)</li>
+                    <li><code>{first_name}</code> - The recipient's first name</li>
+                    <li><code>{last_name}</code> - The recipient's last name</li>
+                </ul>
+                
+                <div class="alert alert-info mt-3">
+                    <small>
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Tip:</strong> Keep messages personal and avoid spam-like content to improve delivery rates.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

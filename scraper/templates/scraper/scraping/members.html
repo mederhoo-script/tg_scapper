@@ -1,0 +1,257 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Scraped Members - {{ session.group.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Scraped Members - {{ session.group.name }}</h1>
+    <div class="btn-group">
+        <a href="{% url 'export_members_csv' session.pk %}" class="btn btn-success">
+            <i class="fas fa-download"></i> Export CSV
+        </a>
+        <a href="{% url 'scraping_sessions' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Sessions
+        </a>
+    </div>
+</div>
+
+<!-- Session Info -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Account:</strong> {{ session.account.phone }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Group:</strong> {{ session.group.name }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Status:</strong> 
+                        <span class="badge bg-{% if session.status == 'completed' %}success{% elif session.status == 'failed' %}danger{% else %}warning{% endif %}">
+                            {{ session.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Total Members:</strong> {{ session.total_members_found }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Search members..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="show_bots" {% if show_bots %}checked{% endif %}>
+                    <label class="form-check-label">Show Bots</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="active_only" {% if active_only %}checked{% endif %}>
+                    <label class="form-check-label">Active Only</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'scraped_members' session.pk %}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Members List -->
+{% if page_obj %}
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <p>Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} members</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-sm btn-outline-warning" onclick="toggleAllMembers(false)">Deactivate All Visible</button>
+            <button class="btn btn-sm btn-outline-success" onclick="toggleAllMembers(true)">Activate All Visible</button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in page_obj %}
+                <tr id="member-{{ member.pk }}" class="{% if not member.is_active %}table-secondary{% endif %}">
+                    <td>
+                        {% if member.username %}
+                            <strong>@{{ member.username }}</strong>
+                        {% else %}
+                            <span class="text-muted">No username</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if member.first_name or member.last_name %}
+                            {{ member.first_name }} {{ member.last_name }}
+                        {% else %}
+                            <span class="text-muted">No name</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if member.phone %}
+                            {{ member.phone }}
+                        {% else %}
+                            <span class="text-muted">Hidden</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if member.is_bot %}
+                            <span class="badge bg-warning">Bot</span>
+                        {% else %}
+                            <span class="badge bg-info">User</span>
+                        {% endif %}
+                        {% if member.is_verified %}
+                            <span class="badge bg-primary">Verified</span>
+                        {% endif %}
+                        {% if member.is_premium %}
+                            <span class="badge bg-success">Premium</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if member.is_active %}success{% else %}secondary{% endif %}" id="status-{{ member.pk }}">
+                            {% if member.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary toggle-btn" 
+                                data-member-id="{{ member.pk }}" 
+                                onclick="toggleMember({{ member.pk }})">
+                            <i class="fas fa-toggle-{% if member.is_active %}on{% else %}off{% endif %}" id="icon-{{ member.pk }}"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if show_bots %}show_bots=on&{% endif %}{% if active_only %}active_only=on&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if show_bots %}show_bots=on&{% endif %}{% if active_only %}active_only=on&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if show_bots %}show_bots=on&{% endif %}{% if active_only %}active_only=on&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="alert alert-info">
+        <h4>No members found</h4>
+        <p>{% if search %}No members match your search criteria.{% else %}This scraping session has no members.{% endif %}</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    function toggleMember(memberId) {
+        fetch(`/members/${memberId}/toggle-active/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const statusBadge = document.getElementById(`status-${memberId}`);
+                const icon = document.getElementById(`icon-${memberId}`);
+                const row = document.getElementById(`member-${memberId}`);
+                
+                if (data.is_active) {
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.textContent = 'Active';
+                    icon.className = 'fas fa-toggle-on';
+                    row.classList.remove('table-secondary');
+                } else {
+                    statusBadge.className = 'badge bg-secondary';
+                    statusBadge.textContent = 'Inactive';
+                    icon.className = 'fas fa-toggle-off';
+                    row.classList.add('table-secondary');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating member status');
+        });
+    }
+    
+    function toggleAllMembers(activate) {
+        const toggleBtns = document.querySelectorAll('.toggle-btn');
+        toggleBtns.forEach(btn => {
+            const memberId = btn.getAttribute('data-member-id');
+            const statusBadge = document.getElementById(`status-${memberId}`);
+            const isCurrentlyActive = statusBadge.textContent.trim() === 'Active';
+            
+            if ((activate && !isCurrentlyActive) || (!activate && isCurrentlyActive)) {
+                toggleMember(memberId);
+            }
+        });
+    }
+</script>
+{% endblock %}

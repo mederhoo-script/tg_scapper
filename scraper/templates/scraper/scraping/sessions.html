@@ -1,0 +1,98 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Scraping Sessions - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Scraping Sessions</h1>
+    <a href="{% url 'start_scraping' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Start New Session
+    </a>
+</div>
+
+{% if sessions %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Group</th>
+                    <th>Account</th>
+                    <th>Status</th>
+                    <th>Members Found</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td>
+                        <strong>{{ session.group.name }}</strong>
+                        <br><small class="text-muted">{{ session.group.identifier }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ session.account.phone }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if session.status == 'completed' %}success{% elif session.status == 'failed' %}danger{% elif session.status == 'running' %}warning{% else %}secondary{% endif %}">
+                            {{ session.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>{{ session.total_members_found }}</strong>
+                        {% if session.use_message_scraping %}
+                            <br><small class="text-muted">Message scraping</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ session.started_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                        {% if session.completed_at %}
+                            {{ session.completed_at|date:"M d, Y H:i" }}
+                            {% if session.duration %}
+                                <br><small class="text-muted">{{ session.duration }}</small>
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            {% if session.status == 'completed' %}
+                                <a href="{% url 'scraped_members' session.pk %}" class="btn btn-sm btn-outline-primary" title="View Members">
+                                    <i class="fas fa-users"></i>
+                                </a>
+                                <a href="{% url 'export_members_csv' session.pk %}" class="btn btn-sm btn-outline-success" title="Export CSV">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            {% endif %}
+                            {% if session.status == 'failed' and session.error_message %}
+                                <button class="btn btn-sm btn-outline-danger" title="{{ session.error_message }}" data-bs-toggle="tooltip">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <h4>No scraping sessions yet</h4>
+        <p>Start your first scraping session to extract members from Telegram groups.</p>
+        <a href="{% url 'start_scraping' %}" class="btn btn-primary">Start Scraping</a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %}
