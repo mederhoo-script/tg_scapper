@@ -1,0 +1,56 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Delete Account - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Delete Account</h1>
+    <a href="{% url 'account_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Accounts
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Are you sure you want to delete the following account?</p>
+                
+                <div class="alert alert-info">
+                    <h6>Account Details:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Phone:</strong> {{ account.phone }}</li>
+                        <li><strong>Name:</strong> {{ account.name|default:"Not set" }}</li>
+                        <li><strong>Groups:</strong> {{ account.groups.count }}</li>
+                        <li><strong>Status:</strong> {{ account.is_active|yesno:"Active,Inactive" }}</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Warning:</h6>
+                    <p class="mb-0">This action cannot be undone. Deleting this account will also:</p>
+                    <ul class="mb-0">
+                        <li>Remove all associated groups</li>
+                        <li>Delete all scraping sessions for this account</li>
+                        <li>Remove all scraped member data</li>
+                        <li>Delete all invite and DM logs</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'account_list' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

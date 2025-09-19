@@ -1,0 +1,69 @@
+{% extends 'scraper/base.html' %}
+
+{% block title %}Accounts - Telegram Scraper{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Telegram Accounts</h1>
+    <a href="{% url 'account_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Account
+    </a>
+</div>
+
+{% if accounts %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Phone</th>
+                    <th>Name</th>
+                    <th>Groups</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr>
+                    <td>
+                        <strong>{{ account.phone }}</strong>
+                    </td>
+                    <td>{{ account.name|default:"-" }}</td>
+                    <td>
+                        <span class="badge bg-info">{{ account.groups_count }} groups</span>
+                    </td>
+                    <td>
+                        {% if account.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ account.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'account_edit' account.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'group_list' %}?account={{ account.pk }}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-layer-group"></i>
+                            </a>
+                            <a href="{% url 'account_delete' account.pk %}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <h4>No accounts configured</h4>
+        <p>You need to add at least one Telegram account to start scraping.</p>
+        <a href="{% url 'account_create' %}" class="btn btn-primary">Add Your First Account</a>
+    </div>
+{% endif %}
+{% endblock %}
